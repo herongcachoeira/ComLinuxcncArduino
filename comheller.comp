@@ -1,0 +1,230 @@
+component comheller """O""";
+
+description """Th""";
+
+pin out  bit    outpin-# [20] """Pinos de saida""";
+pin in  bit     inpin-# [20] """Pinos de entrada""";
+
+pin in bit      com_pulse_in  "Entrada Com";
+pin in bit      com_set_in  "Entrada Com";
+pin out bit      com_pulse_out  "saida Com";
+pin out bit      com_set_out  "saida Com";
+//pin in s32    timer_signal = 100000;
+pin out float debug;
+
+license "GPL";
+author "andy pugh";
+
+variable rtapi_s64 timer_signal = 2000000;
+variable rtapi_s64 elapsed_1;
+variable rtapi_s64 timer_1;
+
+variable rtapi_s64 periodo;
+
+
+function _ ;
+
+;;
+
+int count_in = 0;     // variaveis leitura
+int val_save = 0;
+bool trava_count_in = 0;
+bool trava_set_in = 0;
+
+int countDownPulse = 0;
+int counterSendPin = 0;
+
+int bit_out = 0;
+int number_to_out = 0;
+int state_to_out = 0;
+
+int i;
+
+#define outnumber 20
+#define innumber 20
+#define MAX_CHAN 8
+static int num_out[MAX_CHAN] = {-1};
+RTAPI_MP_ARRAY_INT(num_out, MAX_CHAN, "The number of sense pins to create")
+
+
+FUNCTION(_){
+  
+
+  periodo = period;
+  debug = countDownPulse;
+  //periodo = fperiod;
+
+  if(com_pulse_in == 0){
+
+    if(trava_count_in == 0){
+      trava_count_in = 1;
+      count_in++;
+    }
+
+  } else {
+    trava_count_in = 0;
+  }
+
+  if(com_set_in == 0){
+
+    if(trava_set_in == 0){
+      trava_set_in = 1;
+      val_save = count_in;
+      count_in = 0;
+
+    }
+
+  } else {
+    trava_set_in = 0;
+  }
+
+
+  if(val_save > 0){                  // output to pin
+
+    for(i = 0; i < innumber; i++){
+
+      bit_out = val_save -(i+(i+1));
+
+      if(bit_out ==  0 || bit_out ==  1){
+        number_to_out = i;
+        state_to_out = bit_out;
+      }
+    }
+    val_save = 0;
+    outpin(number_to_out) = state_to_out;
+  }
+
+
+
+
+  //debug = countDownPulse;
+
+
+
+  // parte q faz o envio do sinal de entrada para o linuxcnc
+
+  timer_1 += periodo;
+  elapsed_1 = timer_1;
+
+  if(countDownPulse <= ((counterSendPin*2) + inpin(counterSendPin))){
+    
+    if(timer_1 <= timer_signal){
+      com_pulse_out = 1;
+    } else {
+      com_pulse_out = 0;
+    }
+    
+    if(timer_1 >= (timer_signal*2)){
+      timer_1 = 0; // reset timer
+      countDownPulse++;
+    }
+  
+  } else {
+    
+    if(timer_1 <= timer_signal){
+      com_set_out = 1;
+    } else {
+      com_set_out = 0;
+    }
+
+    if(timer_1 >= (timer_signal*2)){
+      timer_1 = 0; // reset timer 
+      countDownPulse = 0;
+      counterSendPin++;
+      if(counterSendPin >= outnumber) counterSendPin = 0;
+    }
+    
+  }
+
+
+  /*periodo = fperiod;
+
+  timer_3 += periodo;        // parte q faz o envio do sinal de entrada para o linuxcnc
+  elapsed_3 = timer_3;
+  if(countDownPulse < ((counterSendPin*2) + inpin(counterSendPin))){
+    
+    if(timer_3 <= timer_signal){
+      com_out = 1;
+    } else {
+      com_out = 0;
+    }
+    
+    if(timer_3 >= (timer_signal*2)){
+      timer_3 = 0; // reset timer
+      countDownPulse++;
+    }
+  
+  } else {
+    
+    if(timer_3 <= timer_set){
+      com_out = 1;
+    } else {
+      com_out = 0;
+    }
+
+    if(timer_3 >= (timer_signal + timer_set)){
+      timer_3 = 0; // reset timer 
+      countDownPulse = 0;
+      counterSendPin++;
+      if(counterSendPin >= default_out) counterSendPin = 0;
+    }
+    
+  }
+
+
+
+  // Leitura da entrada digital
+
+  if(com_in == 1){
+    
+    if(count_trava == 0){
+      count_in++;
+      count_trava = 1;
+    }
+
+    timer_1 += periodo; // conta o numero de pulsos enviados 
+    elapsed_1 = timer_1;
+    if(timer_1 >= time_in) {
+      val_save = count_in;
+      debug = val_save;
+      count_in = 0;
+    }
+
+    timer_2 = 0;
+
+  } else {
+    timer_1 = 0; 
+    count_trava = 0;
+
+    timer_2 += periodo;
+    elapsed_2 = timer_2;
+  }
+
+  if(timer_2 >= time_reset){ // protecao
+    count_in = 0;
+  }
+
+  int i;
+
+  if(val_save > 0){                  // output to pin
+
+    for(i = 0; i < default_out; i++){
+
+      bit_out = val_save -(i+(i+1));
+
+      if(bit_out ==  0 || bit_out ==  1){
+        number_to_out = i;
+        state_to_out = bit_out;
+      }
+    }
+    val_save = 0;
+    outpin(number_to_out) = state_to_out;
+  }*/
+
+
+
+
+  // Escrita da saida serial
+}
+
+
